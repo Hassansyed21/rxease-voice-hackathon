@@ -119,13 +119,14 @@ function latestReport() { return state.reports.at(-1); }
 function releasedReport() { return state.reports.findLast(report => report.released); }
 
 function voice(label, examples, action, save, fields = {}, reviewSupply = false) {
-  line('Use your Wispr Flow shortcut in the focused field, or type.');
+  line('Use your Wispr Flow shortcut, type, or try the example.');
   const permission = checkbox('I consent to dictation and saving this synthetic text');
   const transcript = field('Dictate with Wispr Flow · ' + label, 'textarea');
   const focus = button('Focus dictation field', () => transcript.focus(), false, true);
   const extra = Object.fromEntries(Object.entries(fields).map(([name, caption]) => [name, field(caption)]));
   const voiceCard = parent;
   parent = disclosure('Try a simulated example');
+  line('Use the example right here in the browser.');
   const language = element('label', 'Simulated example language');
   const choices = element('select', '', language);
   for (const name of Object.keys(examples)) {

@@ -2,5 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rxease-voice-hackathon",
   "compatibility_date": "2026-11-27",
-  "assets": { "directory": "./web" }
+  "main": "worker.js",
+  "assets": { "directory": "./web", "binding": "ASSETS", "run_worker_first": true }
 }

@@ -8,6 +8,12 @@ async function journey(browser, viewport, capture) {
   const page = await browser.newPage({ viewport, recordVideo: videoDir ? { dir: videoDir, size: viewport } : undefined });
   page.setDefaultTimeout(7000);
   const errors = [];
+  const externalRequests = [];
+  const origin = new URL(process.env.RXEASE_URL || 'http://localhost:3000').origin;
+  page.on('request', request => {
+    const url = new URL(request.url());
+    if (['http:', 'https:'].includes(url.protocol) && url.origin !== origin) externalRequests.push(url.origin);
+  });
   page.on('pageerror', error => errors.push(error.message));
   const click = name => page.getByRole('button', { name, exact: true }).click();
   const fill = (name, value) => page.getByLabel(name, { exact: true }).fill(value);
@@ -266,6 +272,7 @@ async function journey(browser, viewport, capture) {
   await has('Patient sent a clarification', '#timeline');
   await shot('12-timeline');
   assert.deepEqual(errors, []);
+  assert.deepEqual(externalRequests, []);
   await page.close();
   console.log('Passed full five-role journey at ' + viewport.width + '×' + viewport.height);
 }

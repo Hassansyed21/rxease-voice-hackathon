@@ -6,6 +6,10 @@ RxEase is a voice-first demo for small clinics in India. It follows one fictiona
 
 Run `docker compose up --build` and open http://localhost:8080. For a buildless preview, run `python -m http.server 3000 --directory web`. No secrets or service accounts are required to run the app.
 
+## Review in a browser
+
+Open [rxease.store](https://rxease.store) and register the sample patient. For the consultation and follow-up, give consent, open **Try a simulated example**, and load the transcript. Review it before approving or sending. Reviewers can also type. If Wispr Flow is installed on the device being used, focus the field and use the device’s Wispr Flow shortcut. The site requires no Wispr Flow installation, API key, or account to complete the demo.
+
 ## Walk the case
 
 1. Register Asha Demo as the patient, enter the displayed verification code and grant demo care consent. Copy the check-in QR token.
