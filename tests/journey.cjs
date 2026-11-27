@@ -1,12 +1,19 @@
 const assert = require('node:assert/strict');
 const { mkdir } = require('node:fs/promises');
 const decodeQr = require('jsqr');
-const { chromium } = require('playwright');
+const { chromium, webkit } = require('playwright');
 
 async function journey(browser, viewport, capture) {
   const videoDir = capture && process.env.RXEASE_VIDEO;
   const page = await browser.newPage({ viewport, recordVideo: videoDir ? { dir: videoDir, size: viewport } : undefined });
   page.setDefaultTimeout(7000);
+  if (viewport.width === 320) {
+    await page.addInitScript(() => {
+      for (const name of ['at', 'findLast', 'toReversed']) delete Array.prototype[name];
+      delete String.prototype.replaceAll;
+      window.structuredClone = undefined;
+    });
+  }
   const errors = [];
   const externalRequests = [];
   const origin = new URL(process.env.RXEASE_URL || 'http://localhost:3000').origin;
@@ -85,6 +92,8 @@ async function journey(browser, viewport, capture) {
   await role('Patient');
   await click('Grant demo care consent');
   const checkIn = await qr('Patient check-in QR');
+  await click('Copy check-in code');
+  await page.getByText(/Code copied|Select and copy the code/).waitFor();
   await shot('03-check-in');
   await role('Doctor');
   await fill('Patient check-in token', 'wrong');
@@ -277,14 +286,39 @@ async function journey(browser, viewport, capture) {
   console.log('Passed full five-role journey at ' + viewport.width + '×' + viewport.height);
 }
 
+async function blockedStorage(browser) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage disabled'); } });
+  });
+  try {
+    await page.goto(process.env.RXEASE_URL || 'http://localhost:3000');
+    await page.getByRole('status').filter({ hasText: 'Reloading may lose changes' }).waitFor();
+    await page.getByRole('button', { name: 'Register demo patient' }).click();
+    await page.getByLabel('Demo verification code').fill('0426');
+    await page.getByRole('button', { name: 'Verify demo contact' }).click();
+    await page.getByRole('button', { name: 'Grant demo care consent' }).click();
+    await page.getByLabel('Demo workspace').selectOption('Administrator');
+    await page.getByRole('button', { name: 'Approve Doctor', exact: true }).click();
+    await page.getByLabel('Demo workspace').selectOption('Patient');
+    await page.getByRole('img', { name: 'Patient check-in QR' }).waitFor();
+    console.log('Passed patient registration and role changes with browser storage disabled');
+  } finally {
+    await page.close();
+  }
+}
+
 (async () => {
   const capture = process.env.RXEASE_CAPTURE;
   if (capture) await mkdir(capture, { recursive: true });
-  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  const useWebKit = process.env.RXEASE_ENGINE === 'webkit';
+  const browser = useWebKit ? await webkit.launch() :
+    await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
   try {
     await journey(browser, { width: 1280, height: 800 }, capture);
     await journey(browser, { width: 390, height: 844 });
     await journey(browser, { width: 320, height: 720 });
+    await blockedStorage(browser);
   } finally {
     await browser.close();
   }

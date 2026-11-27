@@ -14,7 +14,7 @@ export async function signPrescription(rx) {
     ...rx,
     publicKey: await crypto.subtle.exportKey('jwk', keys.publicKey),
     signature: btoa(String.fromCharCode(...new Uint8Array(signature)))
-      .replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
   };
 }
 
@@ -27,7 +27,7 @@ export async function verifyPrescription(rx, token) {
   if (code.toUpperCase() !== rx.code || extra.length) return false;
   if (!rx.signature) return signature === undefined;
   if (!signature || !/^[A-Za-z0-9_-]{86}$/.test(signature)) return false;
-  const bytes = Uint8Array.from(atob(signature.replaceAll('-', '+').replaceAll('_', '/')),
+  const bytes = Uint8Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/')),
     character => character.charCodeAt(0));
   const key = await crypto.subtle.importKey('jwk', rx.publicKey, curve, false, ['verify']);
   return crypto.subtle.verify(algorithm, key, bytes, payload(rx));

@@ -5,15 +5,31 @@ const $ = id => document.getElementById(id);
 const key = 'rxease-journey-v2';
 const titles = { Patient: 'Patient workspace', Doctor: 'Clinician worklist', Pharmacist: 'Dispensing desk', 'Lab staff': 'Laboratory worklist', Administrator: 'Demo administration' };
 const empty = () => ({ patient: null, verified: false, consent: false, checked: false, staff: {}, note: null, rx: null, fills: [], lab: null, reports: [], updates: [], plan: null, visit: null, caregiver: false, events: [] });
+let storage;
+try {
+  storage = window.localStorage;
+} catch {
+  storage = null;
+}
+let state = empty();
 function read() {
+  if (!storage) return state;
+  let saved;
   try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : empty();
+    saved = storage.getItem(key);
+  } catch {
+    storage = null;
+    return state;
+  }
+  if (!saved) return empty();
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? { ...empty(), ...parsed } : empty();
   } catch {
     return empty();
   }
 }
-let state = read();
+state = read();
 let parent = $('panel');
 let caregiverView = false;
 let status = '';
@@ -73,15 +89,15 @@ function record(message, change, expected = state) {
     render();
     return;
   }
-  const next = structuredClone(state);
+  const next = JSON.parse(JSON.stringify(state));
   change(next);
   next.events.push({ message, role: $('role').value, at: new Date().toISOString() });
-  try {
-    localStorage.setItem(key, JSON.stringify(next));
-  } catch {
-    status = 'This browser could not save the record. Check its storage settings and retry.';
-    render();
-    return;
+  if (storage) {
+    try {
+      storage.setItem(key, JSON.stringify(next));
+    } catch {
+      storage = null;
+    }
   }
   state = next;
   status = message;
@@ -110,13 +126,29 @@ function codeBlock(value, label) {
       if (qr.isDark(row, column)) ctx.fillRect(column + 4, row + 4, 1, 1);
     }
   }
-  element('code', value);
+  const code = element('code', value);
+  const warn = feedback();
+  button(label === 'Patient check-in QR' ? 'Copy check-in code' : 'Copy prescription code', async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      warn('Code copied.');
+    } catch {
+      const selection = window.getSelection();
+      if (selection) selection.selectAllChildren(code);
+      warn('Select and copy the code above.');
+    }
+  }, true, true);
 }
 function normalizeCode(value) { return value.trim().toUpperCase(); }
 function supplied() { return state.fills.reduce((sum, fill) => sum + fill.quantity, 0); }
 function outstanding() { return state.rx ? state.rx.quantity - supplied() : 0; }
-function latestReport() { return state.reports.at(-1); }
-function releasedReport() { return state.reports.findLast(report => report.released); }
+function last(items) { return items[items.length - 1]; }
+function latestReport() { return last(state.reports); }
+function releasedReport() {
+  for (let index = state.reports.length - 1; index >= 0; index--) {
+    if (state.reports[index].released) return state.reports[index];
+  }
+}
 
 function voice(label, examples, action, save, fields = {}, reviewSupply = false) {
   line('Use your Wispr Flow shortcut, type, or try the example.');
@@ -142,7 +174,7 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
   }, false, true);
   parent = voiceCard;
   if (extra.concern) button('Draft sections from transcript', () => {
-    const sentences = transcript.value.trim().split(/(?<=[.!?।])\s+|\n+/u);
+    const sentences = transcript.value.trim().replace(/([.!?।])[^\S\n]+/gu, '$1\n').split(/\n+/u).map(sentence => sentence.trim());
     const sections = {
       concern: /^(?:Reason for the visit[:\s]|Patient came to\b|Patient reports\b)/iu,
       observations: /^Observations?[:\s]/iu,
@@ -179,8 +211,8 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
   function valid() {
     const value = transcript.value.trim();
     const text = [value, ...Object.values(extra).map(node => node.value.trim())].join(' ');
-    const matches = /(?<date>\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b|\b(?:today|tomorrow|next visit)\b)|(?<medicine>\bDemoMed\b)|(?<quantity>\b(?:\d+|fourteen|twelve|four)\b|[०-९೦-೯]+|चार|बारह|चौदह|ನಾಲ್ಕು|ಹನ್ನೆರಡು|ಹದಿನಾಲ್ಕು)/giu;
-    highlights.replaceChildren();
+    const matches = /(?:\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b|\b(?:today|tomorrow|next visit)\b)|(?:\bDemoMed\b)|(?:\b(?:\d+|fourteen|twelve|four)\b|[०-९೦-೯]+|चार|बारह|चौदह|ನಾಲ್ಕು|ಹನ್ನೆರಡು|ಹದಿನಾಲ್ಕು)/giu;
+    highlights.textContent = '';
     if (reviewContext) reviewContext.hidden = !value;
     if (value) {
       highlights.append('Review medicine names, quantities and dates: ');
@@ -225,7 +257,7 @@ function patient() {
     const name = field('Synthetic display name', 'text', 'Asha Demo');
     const warn = feedback();
     button('Register demo patient', () => {
-      if (!/^[\p{L}][\p{L} .'-]{1,59}$/u.test(name.value.trim())) return warn('Enter a fictional display name between 2 and 60 characters.');
+      if (!/^[\p{L}][\p{L}\p{M} .'-]{1,59}$/u.test(name.value.trim())) return warn('Enter a fictional display name between 2 and 60 characters.');
       record('Synthetic patient registered', next => { next.patient = { name: name.value.trim(), code: token('CHECK') }; });
     });
     return;
@@ -249,7 +281,7 @@ function patient() {
   }
   if (state.checked) line('Checked in');
   else {
-    line('Show this QR at the clinic or enter its code at check-in.');
+    line('Copy this code. In Administrator, approve Doctor, then enter the code in Doctor to check in.');
     codeBlock(state.patient.code, 'Patient check-in QR');
   }
   if (!state.checked) return;
@@ -276,7 +308,7 @@ function patient() {
     if (latestReport() && !latestReport().released) line('A report version is awaiting clinician release.');
   }
   card('Voice follow-up');
-  const latest = state.updates.at(-1);
+  const latest = last(state.updates);
   if (latest) element('p', latest.text, disclosure(latest.kind === 'clarification' ? 'Last clarification' : 'Last update'));
   if (state.plan) {
     line('Care plan · ' + state.plan.text);
@@ -421,8 +453,8 @@ function doctor() {
     element('p', report.content, details);
     if (report.reason) element('p', 'Correction · ' + report.reason, details);
     if (!current) continue;
-    if (report.approved) button('Release report version ' + report.version, () => record('Clinician released report version ' + report.version, next => { next.reports.at(-1).released = true; }));
-    else button('Approve report version ' + report.version, () => record('Clinician approved report version ' + report.version, next => { next.reports.at(-1).approved = true; }));
+    if (report.approved) button('Release report version ' + report.version, () => record('Clinician released report version ' + report.version, next => { last(next.reports).released = true; }));
+    else button('Approve report version ' + report.version, () => record('Clinician approved report version ' + report.version, next => { last(next.reports).approved = true; }));
   }
   card('Follow-up inbox');
   if (!state.updates.length) line('No patient messages yet.');
@@ -567,16 +599,17 @@ function admin() {
 
 function render() {
   const role = $('role').value;
-  $('panel').replaceChildren();
-  $('timeline').replaceChildren();
+  $('panel').textContent = '';
+  $('timeline').textContent = '';
   const showActivity = !caregiverView && state.checked && ['Patient', 'Doctor'].includes(role);
   $('activity').hidden = !showActivity;
   $('activity').parentElement.classList.toggle('with-activity', showActivity);
   $('role').parentElement.hidden = caregiverView;
   $('demo-controls').hidden = caregiverView || role !== 'Administrator';
   $('workspace-title').textContent = caregiverView ? 'Caregiver view' : titles[role];
-  $('status').textContent = status;
-  $('status').hidden = caregiverView || !status;
+  const storageNotice = storage ? '' : 'This browser can run the demo in this tab. Reloading may lose changes.';
+  $('status').textContent = [status, storageNotice].filter(Boolean).join(' ');
+  $('status').hidden = caregiverView || !$('status').textContent;
   if (caregiverView) {
     if (!state.caregiver) { caregiverView = false; return render(); }
     $('panel').append($('caregiver').content.cloneNode(true));
@@ -597,7 +630,7 @@ function render() {
   if (state.plan && !state.plan.ack) pending.push('Patient acknowledgement');
   if (state.plan?.referral && !state.plan.referralApproved) pending.push('Referral approval');
   $('pending').textContent = pending.length ? pending.join(' · ') : 'No open handoffs';
-  for (const event of state.events.toReversed()) {
+  for (const event of state.events.slice().reverse()) {
     const item = element('li', event.message, $('timeline'));
     const time = element('time', event.role + ' · ' + new Date(event.at).toLocaleString(), item);
     time.dateTime = event.at;
@@ -607,14 +640,20 @@ function render() {
 $('role').onchange = () => { verifiedRx = ''; status = ''; $('activity-history').open = false; render(); };
 $('reset').onclick = () => {
   if (!confirm('Reset all records for this fictional case?')) return;
-  localStorage.removeItem(key);
+  if (storage) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      storage = null;
+    }
+  }
   state = empty();
   verifiedRx = '';
   status = 'Demo reset';
   render();
 };
 window.addEventListener('storage', event => {
-  if (event.key !== key && event.key !== null) return;
+  if (!storage || (event.key !== key && event.key !== null)) return;
   state = read();
   verifiedRx = '';
   status = 'Case updated in another tab';
