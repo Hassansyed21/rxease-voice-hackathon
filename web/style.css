@@ -43,3 +43,8 @@ footer { display: flex; justify-content: space-between; align-items: center; gap
 @media (max-width: 520px) { main { width: calc(100% - 24px); } .intro { align-items: stretch; flex-direction: column; padding-top: 22px; } .metric { padding: 7px; } .card, #panel > section { padding: 15px; } footer { align-items: start; flex-direction: column; } }
 
 [hidden] { display: none !important; }
+
+.report-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 10px; }
+.report-comparison > div { background: #eef4f2; border-radius: 8px; min-width: 0; padding: 12px; }
+summary { cursor: pointer; font-weight: 650; }
+mark { background: #ffedbc; color: #382800; padding: 1px 3px; border-radius: 3px; }
