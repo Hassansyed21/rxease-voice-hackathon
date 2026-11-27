@@ -3,9 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="RxEase connects a fictional care journey from check-in to follow-up.">
-  <title>RxEase | Care workspace</title>
+  <meta name="description" content="Try the synthetic RxEase voice-first care demo for clinic registration, appointments, prescriptions, pharmacy dispensing, lab reports, and patient follow-up.">
+  <title>RxEase Voice | Clinic Check-in and Patient Follow-up</title>
+  <link rel="canonical" href="https://rxease.store/">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icons/icon-16.png" sizes="16x16" type="image/png">
+  <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#102e2b">
   <link rel="stylesheet" href="style.css">
+  <link rel="modulepreload" href="/vendor/qr.js">
+  <link rel="modulepreload" href="/prescription.js">
+  <meta property="og:title" content="RxEase Voice | Clinic Check-in and Patient Follow-up">
+  <meta property="og:description" content="Try the synthetic RxEase voice-first care demo for clinic registration, appointments, prescriptions, pharmacy dispensing, lab reports, and patient follow-up.">
+  <meta property="og:image" content="https://rxease.store/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="RxEase Voice synthetic care workflow">
+  <meta property="og:url" content="https://rxease.store/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://rxease.store/#organization","name":"RxEase","url":"https://rxease.store/"},{"@type":"WebSite","@id":"https://rxease.store/#website","name":"RxEase Voice","url":"https://rxease.store/","publisher":{"@id":"https://rxease.store/#organization"}}]}</script>
 </head>
 <body>
   <header><div class="brand"><span aria-hidden="true" class="mark">+</span>RxEase</div><span class="badge">Synthetic demo</span></header>
@@ -23,6 +42,7 @@
     </div>
     <template id="caregiver"><section aria-labelledby="workspace-title"><p id="shared"></p><button id="return">Return to patient workspace</button></section></template>
     <footer id="demo-controls" hidden><button id="reset" class="secondary">Reset demo</button></footer>
+    <footer class="site-footer"><a href="/privacy-policy">Privacy policy</a></footer>
   </main>
   <script type="module" src="app.js"></script>
 </body>

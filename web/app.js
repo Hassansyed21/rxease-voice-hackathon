@@ -40,7 +40,7 @@ function element(tag, text = '', target = parent) {
   target.append(node);
   return node;
 }
-function card(title, heading = 'h3') {
+function card(title, heading = 'h2') {
   parent = element('section', '', $('panel'));
   element(heading, title);
 }

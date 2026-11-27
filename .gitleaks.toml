@@ -1,0 +1,11 @@
+title = "RxEase secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact browser storage identifier"
+condition = "AND"
+paths = ['''^(web/)?app\.js$''']
+regexTarget = "secret"
+regexes = ['''^rxease-journey-v2$''']
