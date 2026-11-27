@@ -17,6 +17,24 @@ async function journey(browser, viewport, capture) {
   const role = name => page.getByLabel('Demo workspace').selectOption(name);
   async function shot(name, target) {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow at ' + name);
+    const overlap = await page.evaluate(() => {
+      for (const label of document.querySelectorAll('label')) {
+        const control = label.querySelector('input, select, textarea');
+        if (!control || !control.getClientRects().length) continue;
+        const bounds = control.getBoundingClientRect();
+        const caption = Array.from(label.childNodes).find(node =>
+          node.nodeType === Node.TEXT_NODE && node.textContent.trim() || node.nodeName === 'SPAN');
+        if (!caption) continue;
+        const range = document.createRange();
+        range.selectNodeContents(caption);
+        for (const glyphs of range.getClientRects()) {
+          if (glyphs.left < bounds.right - 1 && glyphs.right > bounds.left + 1 &&
+              glyphs.top < bounds.bottom - 1 && glyphs.bottom > bounds.top + 1) return caption.textContent;
+        }
+      }
+      return null;
+    });
+    assert.equal(overlap, null, 'Caption overlaps its control at ' + name);
     if (capture) {
       if (target) await page.getByRole('heading', { name: target, exact: true }).evaluate(node => node.scrollIntoView({ block: 'start' }));
       else await page.evaluate(() => scrollTo(0, 0));
@@ -251,6 +269,7 @@ async function journey(browser, viewport, capture) {
   try {
     await journey(browser, { width: 1280, height: 800 }, capture);
     await journey(browser, { width: 390, height: 844 });
+    await journey(browser, { width: 320, height: 720 });
   } finally {
     await browser.close();
   }

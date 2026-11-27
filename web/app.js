@@ -47,10 +47,11 @@ function field(label, type = 'text', value = '') {
   return node;
 }
 function checkbox(label) {
-  const wrap = element('label', label);
-  const node = document.createElement('input');
+  const wrap = element('label');
+  wrap.className = 'check-label';
+  const node = element('input', '', wrap);
   node.type = 'checkbox';
-  wrap.prepend(node);
+  element('span', label, wrap);
   return node;
 }
 function feedback() {
