@@ -7,3 +7,9 @@ The app stores the fictional case in this browser's local storage. Demo role swi
 RxEase provides editable fields for typing or dictation from the installed Wispr Flow client. RxEase does not call a Wispr API or perform speech recognition. The built-in example inserts labeled simulated text. Installed dictation software may process speech externally. The examples are simulated, including Kannada, Hindi, English and mixed-language text. Speech recognition quality and regional accents require testing with the installed client. Text is stored as entered and the quantity prompt flags selected ambiguous patterns for manual review.
 
 Report an issue in this hackathon repository with fictional examples only.
+
+## Public source and releases
+
+Treat the public Git history, release files and browser assets as readable by anyone. BLA targets reverse engineering of distributed build artifacts. The RxEase demo intentionally publishes its source for competition review and ships only synthetic data. Switching the repository to private limits future access through GitHub. Existing copies and public browser assets still need to be treated as public.
+
+The verification workflow grants read-only repository access, keeps checkout credentials out of the working tree and pins each action to a commit. Gitleaks scans commits for credentials. Keep production credentials and real records outside this repository and the public asset directory. [BLA documentation](https://github.com/qybaihe/bla)
