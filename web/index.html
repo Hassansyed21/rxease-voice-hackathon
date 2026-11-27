@@ -1,1 +1,27 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RxEase | Care journey</title><link rel="stylesheet" href="style.css"></head><body><header><strong>RxEase / Care</strong><span>SYNTHETIC DEMO</span></header><main><h1>From check-in to follow-up.</h1><p>One fictional patient, five care roles. Switch roles to follow the same case on this device.</p><label for="role">Demo role (not authentication)</label><select id="role"><option>Patient</option><option>Doctor</option><option>Pharmacist</option><option>Lab staff</option><option>Administrator</option></select><section id="panel"></section><section><h2>Care timeline</h2><div id="timeline"></div></section><button id="reset">Reset synthetic case</button><footer>Demo only. No real patient data, clinical decisions, verified credentials or production signatures.</footer></main><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RxEase connects a fictional care journey from check-in to follow-up.">
+  <title>RxEase | Care workspace</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><div class="brand"><span aria-hidden="true" class="mark">+</span>RxEase</div><span class="badge">Synthetic demo</span></header>
+  <main>
+    <div class="intro">
+      <div><p class="eyebrow">Care workspace</p><h1>Every handoff, in view.</h1><p>Follow a fictional patient from arrival to follow-up.</p></div>
+      <div><label for="role">Demo workspace</label><select id="role"><option>Patient</option><option>Doctor</option><option>Pharmacist</option><option>Lab staff</option><option>Administrator</option></select></div>
+    </div>
+    <div id="summary" class="summary"></div>
+    <div class="layout">
+      <section id="panel" aria-label="Workspace"></section>
+      <aside class="card"><h2>Care timeline</h2><p id="pending"></p><ol id="timeline"></ol></aside>
+    </div>
+    <template id="caregiver"><section><h2>Caregiver view</h2><p id="shared"></p><button id="return">Return to patient workspace</button></section></template>
+    <footer><span>Fictional records · Shared within this browser · Demo roles are freely switchable</span><button id="reset" class="secondary">Reset demo</button></footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

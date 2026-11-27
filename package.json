@@ -1,0 +1,9 @@
+{
+  "name": "rxease-voice-hackathon",
+  "private": true,
+  "scripts": { "test": "node tests/journey.cjs" },
+  "devDependencies": {
+    "jsqr": "1.4.0",
+    "playwright": "1.61.1"
+  }
+}

@@ -1,14 +1,21 @@
-name: Verify prototype
+name: Verify RxEase
 on: [push, pull_request]
 jobs:
-  smoke:
+  journey:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node --check web/app.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: docker compose config
-      - run: docker compose up -d
+      - run: docker compose up -d --build
       - run: curl --retry 10 --retry-connrefused --fail http://localhost:8080/
-      - run: curl --fail http://localhost:8080/app.js
+      - run: npm test
+        env:
+          RXEASE_URL: http://localhost:8080/
       - if: always()
         run: docker compose down
