@@ -27,7 +27,7 @@ Open [rxease.store](https://rxease.store) and register the sample patient. For t
 
 The Cloudflare deployment uses the asset directory in `wrangler.jsonc`. Deploy the existing Worker with `npx wrangler deploy` using authorized Cloudflare access. The target domain is [rxease.store](https://rxease.store).
 
-See [Safety and privacy](SECURITY.md) for demo boundaries.
+See [Safety and privacy](SECURITY.md) for demo boundaries and the [launch audit](LAUNCH-AUDIT.md) for the verification checklist and owner setup.
 
 ## Proposed pilot
 
@@ -38,4 +38,4 @@ The primary target is at least 80% closure of eligible routine follow-ups within
 ## Submission materials
 
 - [Pitch deck](submission/RxEase-Pitch.pdf)
-- [Demo recording](submission/RxEase-Demo.mp4)
+- [Demo recording](submission/RxEase-Demo.mp4) uses real application footage and generated adult male Indian English narration. [Voice model](https://huggingface.co/prasadvittaldev/pocket-tts-indian-english-male-indictts)
