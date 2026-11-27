@@ -38,4 +38,4 @@ The primary target is at least 80% closure of eligible routine follow-ups within
 ## Submission materials
 
 - [Pitch deck](submission/RxEase-Pitch.pdf)
-- [Demo recording](submission/RxEase-Demo.mp4) uses real application footage and generated adult male Indian English narration. [Voice model](https://huggingface.co/prasadvittaldev/pocket-tts-indian-english-male-indictts)
+- [Demo recording](submission/RxEase-Demo.mp4) uses real application footage and synthesized adult male American English narration. [Voice model](https://huggingface.co/hexgrad/Kokoro-82M)

@@ -84,7 +84,7 @@ The remaining network dependency tree diagnostic identifies the app module relat
 
 The live five-role journey passed at 360, 390, 768 and 1024 pixels. Wrangler and Cloudflare public-route checks passed. Both published HTML pages delivered the six requested security headers. Public checks covered safe ordinary requests and literal text rendering.
 
-The submission video is 169.8 seconds. It contains H.264 video and AAC narration with no caption track or overlaid captions. Narration was generated with the adult male Indian English Pocket TTS model and synchronized to the existing recordings of the working demo.
+The submission video is 169.8 seconds. It contains H.264 video and AAC narration with no caption track or overlaid captions. The revised adult male American English narration uses the Kokoro voice model and is timed to the existing demo footage.
 
 ## Owner account steps
 
