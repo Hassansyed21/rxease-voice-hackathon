@@ -1,0 +1,2 @@
+# Run RxEase Voice
+Run `docker compose up` and visit http://localhost:8080. No .env or keys required. Alternatively run `python -m http.server 8080 --directory web`. Focus the transcript and use installed Wispr Flow, or use browser recognition where supported. Try the fictional example, confirm names, and read the simulated alerts. No official Wispr API integration. Docker and device voice testing pending. AI-assisted prototype; verify eligibility and original-code requirement before submission.
