@@ -12,7 +12,7 @@ async function journey(browser, viewport, capture) {
   const click = name => page.getByRole('button', { name, exact: true }).click();
   const fill = (name, value) => page.getByLabel(name, { exact: true }).fill(value);
   const check = name => page.getByLabel(name, { exact: true }).check();
-  const has = (text, root = '#panel') => page.locator(root).filter({ hasText: new RegExp(text) }).waitFor();
+  const has = (text, root = 'main') => page.locator(root).filter({ hasText: new RegExp(text) }).waitFor();
   const enabled = name => page.getByRole('button', { name, exact: true }).isEnabled();
   const role = name => page.getByLabel('Demo workspace').selectOption(name);
   async function shot(name, target) {
@@ -61,6 +61,7 @@ async function journey(browser, viewport, capture) {
     name, mimeType: 'text/plain', buffer: Buffer.from(contents)
   });
   await page.goto(process.env.RXEASE_URL || 'http://localhost:3000');
+  assert.ok(!await page.locator('#activity').isVisible());
   await shot('01-start');
   await click('Register demo patient');
   await click('Verify demo contact');
@@ -70,6 +71,7 @@ async function journey(browser, viewport, capture) {
   await role('Doctor');
   await has('Administrator approval');
   await role('Administrator');
+  assert.ok(!await page.locator('#activity').isVisible());
   for (const name of ['Doctor', 'Pharmacist', 'Lab staff']) await click('Approve ' + name);
   await shot('02-administrator');
   await role('Doctor');
@@ -88,6 +90,7 @@ async function journey(browser, viewport, capture) {
   assert.equal(await enabled('Approve note'), false);
   await click('Focus dictation field');
   assert.ok(await page.getByLabel('Dictate with Wispr Flow · Consultation transcript').evaluate(el => el === document.activeElement));
+  await page.getByText('Try a simulated example', { exact: true }).click();
   await click('Load simulated dictation');
   await click('Draft sections from transcript');
   assert.match(await page.getByLabel('Reason for the visit').inputValue(), /screening result/);
@@ -115,6 +118,8 @@ async function journey(browser, viewport, capture) {
   await role('Lab staff');
   await has('Patient sharing consent is required');
   await role('Patient');
+  assert.ok(!await page.getByRole('img', { name: 'Demo prescription QR' }).isVisible());
+  await page.getByText('Show prescription QR', { exact: true }).click();
   const prescription = await qr('Demo prescription QR');
   await shot('05-prescription', 'Demo prescription');
   await click('Grant lab sharing consent');
@@ -196,6 +201,7 @@ async function journey(browser, viewport, capture) {
   await check('I confirm the amount I received differs from the pharmacy record');
   assert.equal(await enabled('Send update'), true);
   await fill('Dictate with Wispr Flow · Follow-up transcript', 'DemoMed on 2026-12-01.');
+  await page.getByText('Try a simulated example', { exact: true }).click();
   await page.getByLabel('Simulated example language').selectOption('Kannada');
   await click('Load simulated dictation');
   const transcript = page.getByLabel('Dictate with Wispr Flow · Follow-up transcript');
@@ -246,7 +252,7 @@ async function journey(browser, viewport, capture) {
   await has('Attended');
   await has('Confirm a follow-up date this week');
   assert.ok(!await page.getByLabel('Demo workspace').isVisible());
-  assert.ok(!await page.getByRole('heading', { name: 'Care timeline' }).isVisible());
+  assert.ok(!await page.getByText('Care timeline', { exact: true }).isVisible());
   assert.ok(!(await page.locator('#panel').innerText()).includes('Corrected fictional result'));
   await shot('11-caregiver');
   await click('Return to patient workspace');
@@ -255,6 +261,8 @@ async function journey(browser, viewport, capture) {
   await page.reload();
   await has('8 outstanding');
   await has('Released version 2');
+  assert.ok(!await page.locator('#timeline').isVisible());
+  await page.getByText('Care timeline', { exact: true }).click();
   await has('Patient sent a clarification', '#timeline');
   await shot('12-timeline');
   assert.deepEqual(errors, []);

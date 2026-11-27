@@ -29,6 +29,11 @@ function card(title, heading = 'h3') {
   element(heading, title);
 }
 function line(text) { return element('p', text); }
+function disclosure(title, target = parent) {
+  const details = element('details', '', target);
+  element('summary', title, details);
+  return details;
+}
 function button(text, run, enabled = true, secondary = false) {
   const node = element('button', text);
   node.type = 'button';
@@ -114,11 +119,13 @@ function latestReport() { return state.reports.at(-1); }
 function releasedReport() { return state.reports.findLast(report => report.released); }
 
 function voice(label, examples, action, save, fields = {}, reviewSupply = false) {
-  line('Use your installed Wispr Flow in the focused field. Speak one short sentence at a time. You can also type or ask someone to help enter the text.');
+  line('Use your Wispr Flow shortcut in the focused field, or type.');
   const permission = checkbox('I consent to dictation and saving this synthetic text');
   const transcript = field('Dictate with Wispr Flow · ' + label, 'textarea');
-  const extra = Object.fromEntries(Object.entries(fields).map(([name, caption]) => [name, field(caption)]));
   const focus = button('Focus dictation field', () => transcript.focus(), false, true);
+  const extra = Object.fromEntries(Object.entries(fields).map(([name, caption]) => [name, field(caption)]));
+  const voiceCard = parent;
+  parent = disclosure('Try a simulated example');
   const language = element('label', 'Simulated example language');
   const choices = element('select', '', language);
   for (const name of Object.keys(examples)) {
@@ -132,6 +139,7 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
     transcript.dispatchEvent(new Event('input'));
     transcript.focus();
   }, false, true);
+  parent = voiceCard;
   if (extra.concern) button('Draft sections from transcript', () => {
     const sentences = transcript.value.trim().split(/(?<=[.!?।])\s+|\n+/u);
     const sections = {
@@ -155,11 +163,10 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
   }, true, true);
   const draftStatus = extra.concern ? feedback() : null;
   const highlights = line('');
-  if (reviewSupply) {
-    line(state.rx ? 'Prescription record · ' + state.rx.med + ' · ' + supplied() + ' dispensed · ' + outstanding() + ' still to collect' : 'Prescription record · Awaiting prescription');
-    line('Report status · ' + (releasedReport() ? 'Version ' + releasedReport().version + ' released' : 'Awaiting release') +
-      (latestReport() && !latestReport().released ? ' · New version awaiting review' : ''));
-  }
+  const reviewContext = reviewSupply && (state.rx || state.lab) ? element('div') : null;
+  if (reviewContext && state.rx) element('p', supplied() + ' dispensed · ' + outstanding() + ' still to collect', reviewContext);
+  if (reviewContext && state.lab) element('p', 'Report status · ' + (releasedReport() ? 'Version ' + releasedReport().version + ' released' : 'Awaiting release') +
+    (latestReport() && !latestReport().released ? ' · New version awaiting review' : ''), reviewContext);
   const confirmation = checkbox('I reviewed the text, quantities and dates');
   const discrepancy = checkbox('I confirm the amount I received differs from the pharmacy record');
   discrepancy.parentElement.hidden = true;
@@ -173,6 +180,7 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
     const text = [value, ...Object.values(extra).map(node => node.value.trim())].join(' ');
     const matches = /(?<date>\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b|\b(?:today|tomorrow|next visit)\b)|(?<medicine>\bDemoMed\b)|(?<quantity>\b(?:\d+|fourteen|twelve|four)\b|[०-९೦-೯]+|चार|बारह|चौदह|ನಾಲ್ಕು|ಹನ್ನೆರಡು|ಹದಿನಾಲ್ಕು)/giu;
     highlights.replaceChildren();
+    if (reviewContext) reviewContext.hidden = !value;
     if (value) {
       highlights.append('Review medicine names, quantities and dates: ');
       const found = Array.from(text.matchAll(matches));
@@ -188,7 +196,7 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
     const reportedQuantity = reported ? ({ four: 4, twelve: 12, fourteen: 14 }[reported[1].toLowerCase()] ?? Number(reported[1])) : null;
     const conflict = state.rx && reportedQuantity !== null && reportedQuantity !== supplied();
     discrepancy.parentElement.hidden = !conflict;
-    if (!value) warn('No text received. Try again or type your update.');
+    if (!value) warn(permission.checked ? 'No text received. Try again or type your update.' : '');
     else if (fourOrFourteen) warn('Did you receive four tablets or fourteen? Edit the transcript before sending.');
     else if (otherRange) warn('Which quantity did you mean? Edit the transcript before saving.');
     else if (conflict) warn('You entered ' + reportedQuantity + ' received. The pharmacy recorded ' + supplied() +
@@ -211,9 +219,8 @@ function voice(label, examples, action, save, fields = {}, reviewSupply = false)
 }
 
 function patient() {
-  card('Registration and check-in');
+  card(state.checked ? state.patient.name : 'Registration and check-in');
   if (!state.patient) {
-    line('Register the fictional patient to begin the demo.');
     const name = field('Synthetic display name', 'text', 'Asha Demo');
     const warn = feedback();
     button('Register demo patient', () => {
@@ -222,7 +229,7 @@ function patient() {
     });
     return;
   }
-  line(state.patient.name + ' · RX-001');
+  if (!state.checked) line(state.patient.name + ' · RX-001');
   if (!state.verified) {
     line('Demo contact · asha@example.invalid · Verification code 0426. No message is sent.');
     const otp = field('Demo verification code');
@@ -235,19 +242,23 @@ function patient() {
     return;
   }
   if (!state.consent) {
-    line('Allow this fictional record to appear in the clinical demo workspaces.');
+    line('Share this record with your care team.');
     button('Grant demo care consent', () => record('Patient granted care consent', next => { next.consent = true; }));
     return;
   }
-  line(state.checked ? 'Checked in at the clinic' : 'Show this QR code at check-in or copy its token into the clinician workspace.');
-  codeBlock(state.patient.code, 'Patient check-in QR');
+  if (state.checked) line('Checked in');
+  else {
+    line('Show this QR at the clinic or enter its code at check-in.');
+    codeBlock(state.patient.code, 'Patient check-in QR');
+  }
   if (!state.checked) return;
   if (state.rx) {
     card('Demo prescription');
     line(state.rx.med + ' · ' + state.rx.quantity + ' prescribed · ' + supplied() + ' supplied · ' + outstanding() + ' outstanding');
-    line(supplied() + ' dispensed · ' + outstanding() + ' still to collect');
-    line(state.rx.signature ? 'Signed demo prescription' : 'Legacy demo prescription');
+    const prescriptionCard = parent;
+    parent = disclosure('Show prescription QR');
     codeBlock(prescriptionToken(state.rx), 'Demo prescription QR');
+    parent = prescriptionCard;
   }
   if (state.lab) {
     card('Laboratory results');
@@ -258,14 +269,14 @@ function patient() {
     }
     const report = releasedReport();
     if (report) {
-      line('Released version ' + report.version + ' · ' + report.filename);
-      line(report.content);
+      const details = disclosure('Released version ' + report.version + ' · ' + report.filename);
+      element('p', report.content, details);
     }
     if (latestReport() && !latestReport().released) line('A report version is awaiting clinician release.');
   }
   card('Voice follow-up');
   const latest = state.updates.at(-1);
-  if (latest) line((latest.kind === 'clarification' ? 'Last clarification · ' : 'Last update · ') + latest.text);
+  if (latest) element('p', latest.text, disclosure(latest.kind === 'clarification' ? 'Last clarification' : 'Last update'));
   if (state.plan) {
     line('Care plan · ' + state.plan.text);
     line('Treatment goal · ' + state.plan.goal);
@@ -313,7 +324,7 @@ function doctor() {
   card('Clinic check-in');
   if (!state.staff.Doctor) return line('Administrator approval is required for the demo clinician.');
   if (!state.consent) return line('Waiting for patient registration, verification and consent.');
-  line(state.patient.name + ' · Care consent granted');
+  line(state.patient.name + (state.checked ? ' · Checked in' : ' · Care consent granted'));
   if (!state.checked) {
     const input = field('Patient check-in token');
     const warn = feedback();
@@ -324,14 +335,13 @@ function doctor() {
     input.onkeydown = event => { if (event.key === 'Enter') verify.click(); };
     return;
   }
-  line(state.patient.name + ' · Checked in');
   card('Consultation');
   if (state.note) {
-    line('Visit note approved');
-    line('Reason for the visit · ' + state.note.concern);
-    line('Observations · ' + (state.note.observations ?? ''));
-    line('Next steps · ' + state.note.assessment);
-    line('Approved transcript · ' + state.note.transcript);
+    const note = disclosure('Visit note approved');
+    if (state.note.concern) element('p', 'Reason for the visit · ' + state.note.concern, note);
+    if (state.note.observations) element('p', 'Observations · ' + state.note.observations, note);
+    if (state.note.assessment) element('p', 'Next steps · ' + state.note.assessment, note);
+    element('p', state.note.transcript, note);
   } else {
     voice('Consultation transcript', {
       English: 'Patient came to discuss a screening result. Review the lab report at the next visit.',
@@ -345,7 +355,7 @@ function doctor() {
   card('Prescription');
   if (state.rx) line(state.rx.med + ' · ' + state.rx.quantity + ' prescribed · ' + supplied() + ' supplied');
   else {
-    line('Fictional medication DemoMed. The demo checks quantities and a simulated sensitivity flag.');
+    line('Medication · DemoMed');
     const perDose = field('Units per dose', 'number', '1');
     const frequency = field('Doses per day', 'number', '2');
     const days = field('Days', 'number', '6');
@@ -402,16 +412,25 @@ function doctor() {
     }
   }
   for (const report of state.reports) {
-    line('Version ' + report.version + ' · ' + report.filename + ' · ' + (report.released ? 'Released' : report.approved ? 'Approved' : 'Pending review'));
-    line(report.content);
-    if (report.reason) line('Correction · ' + report.reason);
-    if (report !== latestReport() || report.released) continue;
+    const current = report === pendingReport && !report.released;
+    const title = 'Version ' + report.version + ' · ' + report.filename + ' · ' +
+      (report.released ? 'Released' : report.approved ? 'Approved' : 'Pending review');
+    const details = disclosure(title);
+    details.open = current;
+    element('p', report.content, details);
+    if (report.reason) element('p', 'Correction · ' + report.reason, details);
+    if (!current) continue;
     if (report.approved) button('Release report version ' + report.version, () => record('Clinician released report version ' + report.version, next => { next.reports.at(-1).released = true; }));
     else button('Approve report version ' + report.version, () => record('Clinician approved report version ' + report.version, next => { next.reports.at(-1).approved = true; }));
   }
   card('Follow-up inbox');
   if (!state.updates.length) line('No patient messages yet.');
-  for (const update of state.updates) line((update.reviewed ? 'Reviewed' : 'New') + ' ' + update.kind + ' · ' + update.text);
+  const reviewed = state.updates.filter(update => update.reviewed);
+  if (reviewed.length) {
+    const history = disclosure('Reviewed messages');
+    for (const update of reviewed) element('p', update.text, history);
+  }
+  for (const update of state.updates.filter(update => !update.reviewed)) line('New ' + update.kind + ' · ' + update.text);
   if (state.updates.length) {
     if (state.rx) line('Prescription · ' + state.rx.med + ' · ' + supplied() + ' dispensed · ' + outstanding() + ' still to collect');
     const currentReport = releasedReport();
@@ -475,7 +494,10 @@ function pharmacy() {
   line((state.rx.signature ? 'Demo signature verified · ' : 'Legacy token matched · ') + state.rx.med);
   card('Dispensing');
   line(state.rx.quantity + ' prescribed · ' + supplied() + ' supplied · ' + outstanding() + ' outstanding');
-  for (const fill of state.fills) line(fill.quantity + ' supplied · ' + new Date(fill.at).toLocaleString());
+  if (state.fills.length) {
+    const history = disclosure('Dispensing history');
+    for (const fill of state.fills) element('p', fill.quantity + ' supplied · ' + new Date(fill.at).toLocaleString(), history);
+  }
   if (!outstanding()) return line('Prescription fully supplied.');
   const amount = field('Quantity supplied', 'number', String(Math.min(4, outstanding())));
   amount.min = amount.step = '1';
@@ -536,23 +558,24 @@ function lab() {
 function admin() {
   card('Synthetic staff approvals');
   for (const role of ['Doctor', 'Pharmacist', 'Lab staff']) {
-    button(state.staff[role] ? role + ' approved' : 'Approve ' + role,
-      () => record('Administrator approved ' + role, next => { next.staff[role] = true; }), !state.staff[role]);
+    if (!state.staff[role]) button('Approve ' + role,
+      () => record('Administrator approved ' + role, next => { next.staff[role] = true; }));
+    else line(role + ' approved');
   }
-  card('Proposed pilot');
-  line('Eight weeks · 200 patients · two clinics · four doctors · two pharmacies · one laboratory');
-  line('Targets · 80% of eligible follow-ups closed within 14 days and 25% shorter median consultation documentation time');
-  line('Track unresolved partial fills, time to clinician report review, and the need for help correcting dictated text.');
 }
 
 function render() {
   const role = $('role').value;
   $('panel').replaceChildren();
-  $('summary').replaceChildren();
   $('timeline').replaceChildren();
-  for (const node of [$('summary'), $('role').parentElement, $('reset'), $('timeline').parentElement]) {
-    if (node) node.hidden = caregiverView;
-  }
+  const showActivity = !caregiverView && state.checked && ['Patient', 'Doctor'].includes(role);
+  $('activity').hidden = !showActivity;
+  $('activity').parentElement.classList.toggle('with-activity', showActivity);
+  $('role').parentElement.hidden = caregiverView;
+  $('demo-controls').hidden = caregiverView || role !== 'Administrator';
+  $('workspace-title').textContent = caregiverView ? 'Caregiver view' : titles[role];
+  $('status').textContent = status;
+  $('status').hidden = caregiverView || !status;
   if (caregiverView) {
     if (!state.caregiver) { caregiverView = false; return render(); }
     $('panel').append($('caregiver').content.cloneNode(true));
@@ -563,20 +586,8 @@ function render() {
     $('return').onclick = () => { caregiverView = false; render(); };
     return;
   }
-  for (const [label, value] of [
-    ['Patient', state.patient?.name ?? 'Unregistered'],
-    ['Clinic', state.checked ? 'Checked in' : 'Awaiting arrival'],
-    ['Medication', state.rx ? outstanding() + ' outstanding' : 'Awaiting prescription']
-  ]) {
-    const metric = element('div', '', $('summary'));
-    metric.className = 'metric';
-    element('span', label, metric);
-    element('strong', value, metric);
-  }
-  card(titles[role], 'h2');
-  const announcement = line(status || 'Synthetic case RX-001');
-  announcement.setAttribute('role', 'status');
   ({ Patient: patient, Doctor: doctor, Pharmacist: pharmacy, 'Lab staff': lab, Administrator: admin })[role]();
+  if (!showActivity) return;
   const pending = [];
   if (outstanding()) pending.push(outstanding() + ' units outstanding');
   if (state.lab && !state.lab.consent) pending.push('Lab consent');
@@ -592,7 +603,7 @@ function render() {
   }
 }
 
-$('role').onchange = () => { verifiedRx = ''; status = ''; render(); };
+$('role').onchange = () => { verifiedRx = ''; status = ''; $('activity-history').open = false; render(); };
 $('reset').onclick = () => {
   if (!confirm('Reset all records for this fictional case?')) return;
   localStorage.removeItem(key);

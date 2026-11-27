@@ -11,16 +11,16 @@
   <header><div class="brand"><span aria-hidden="true" class="mark">+</span>RxEase</div><span class="badge">Synthetic demo</span></header>
   <main>
     <div class="intro">
-      <div><p class="eyebrow">Care workspace</p><h1>Every handoff, in view.</h1><p>Follow a fictional patient from arrival to follow-up.</p></div>
+      <h1 id="workspace-title">Patient workspace</h1>
       <div><label for="role">Demo workspace</label><select id="role"><option>Patient</option><option>Doctor</option><option>Pharmacist</option><option>Lab staff</option><option>Administrator</option></select></div>
     </div>
-    <div id="summary" class="summary"></div>
+    <p id="status" role="status" hidden></p>
     <div class="layout">
       <section id="panel" aria-label="Workspace"></section>
-      <aside class="card"><h2>Care timeline</h2><p id="pending"></p><ol id="timeline"></ol></aside>
+      <aside id="activity" class="card"><h2>Open care items</h2><p id="pending"></p><details id="activity-history"><summary>Care timeline</summary><ol id="timeline"></ol></details></aside>
     </div>
-    <template id="caregiver"><section><h2>Caregiver view</h2><p id="shared"></p><button id="return">Return to patient workspace</button></section></template>
-    <footer><span>Fictional records · Shared within this browser · Demo roles are freely switchable</span><button id="reset" class="secondary">Reset demo</button></footer>
+    <template id="caregiver"><section aria-labelledby="workspace-title"><p id="shared"></p><button id="return">Return to patient workspace</button></section></template>
+    <footer id="demo-controls" hidden><button id="reset" class="secondary">Reset demo</button></footer>
   </main>
   <script type="module" src="app.js"></script>
 </body>
